@@ -4,46 +4,128 @@ import requests
 import json
 import pyowm 
 from OWMapp.forms import WeatherForm
+from googleplaces import GooglePlaces, types, lang
+
 import sqlite3
 
 # Create your views here.
 # reference: http://drksephy.github.io/2015/07/16/django/
 
-#For future reference, a database should not be used for weather
+#For future reference, tweak database to account for date 
 
-def index(request):
-    return HttpResponse("Welcome to the Weather site!")
 
-def weather(request):
-    #template = loader.get_template('templates_app\weather.html')
-    
-    conn = sqlite3.connect('db.sqlite3')
-    cur = conn.cursor()
+def home(request):
+    return render(request, 'home.html')
 
-    #cur.execute('DROP TABLE IF EXISTS Weather ')
-    cur.execute('CREATE TABLE IF NOT EXISTS Weather (city TEXT, status TEXT, humidity INTEGER, temperature INTEGER, wind INTEGER)')
-
-    conn.close()
-    
+def activities(request):
     parsedData = []
     
     owm = pyowm.OWM('c646db9215792630a0891c27e40c6745')
+    google_places = GooglePlaces('AIzaSyC_fBaJydXEGKLLqq5Ym2lCXZ9glOvPqFg') 
     
     if request.method == 'POST':
         
         city = request.POST.get('search-term')
         
+#        query_result = google_places.nearby_search(
+#            location=city, keyword='',
+#            radius=20000, types=[types.TYPE_FOOD])
+#        
+#        print(query_result)
+        
+        activitiesData = {}  
+                
+        forecast = owm.weather_at_place(city)
+        w = forecast.get_weather()
+        status = w.get_status()
+        humidity = w.get_humidity()  
+        temperature = w.get_temperature()
+        wind = w.get_wind()
+
+        temp = int(round((((temperature['temp'] - 273.15) * 9 / 5) + 32), 0))
+        wind_speed = wind['speed']
+        
+        if (status == "Rain" or status == "Snow" or temp < 32):
+            query_result = google_places.nearby_search(
+            location=city, keyword='',
+            radius=20000, types=[types.TYPE_AQUARIUM, types.TYPE_ART_GALLERY, types.TYPE_BOWLING_ALLEY, 
+                                 types.TYPE_CLOTHING_STORE, types.TYPE_MOVIE_THEATER, types.TYPE_SHOPPING_MALL])
+            
+        elif (status == "Clear" or temp > 50):
+            query_result = google_places.nearby_search(
+            location=city, keyword='',
+            radius=20000, types=[types.TYPE_AMUSEMENT_PARK, types.TYPE_CAMPGROUND, types.TYPE_ZOO,
+                                 types.TYPE_PARK, types.TYPE_BICYCLE_STORE])
+            
+        
+        else:  
+            if (status == "Wind" or status == "Mist" or wind_speed > 15 or humidity > 80):
+                query_result = google_places.nearby_search(
+                location=city, keyword='',
+                types=[types.TYPE_AQUARIUM, types.TYPE_ART_GALLERY, types.TYPE_BOWLING_ALLEY, 
+                                 types.TYPE_CLOTHING_STORE, types.TYPE_MOVIE_THEATER, types.TYPE_SHOPPING_MALL])
+                                 
+                
+            else:
+                query_result = google_places.nearby_search(
+                location=city, keyword='',
+                radius=20000, types=[types.TYPE_AMUSEMENT_PARK, types.TYPE_CAMPGROUND, types.TYPE_ZOO,
+                                     types.TYPE_PARK, types.TYPE_BICYCLE_STORE])
+                
+                
+        i = 0
+        for place in query_result.places:
+            activitiesData[i] = place.name
+            i = i+1
+            print(place.name)
+        
+        parsedData.append(activitiesData)
+        
+    return render(request, 'activities.html', {'data': parsedData})
+
+def weather(request):
+    #template = loader.get_template('templates_app\weather.html')
+    
+    
+    conn = sqlite3.connect('db.sqlite3')
+    cur = conn.cursor()
+
+    #cur.execute('DROP TABLE IF EXISTS Weather ')
+
+    cur.execute('CREATE TABLE IF NOT EXISTS Weather (city TEXT, status TEXT, humidity INTEGER, temperature INTEGER, wind INTEGER)')
+    
+#    print('Weather:')
+#    cur.execute('SELECT city FROM Weather')
+#    for row in cur :
+#        print(row)
+        
+    conn.close()
+    
+    parsedData = []
+    
+    owm = pyowm.OWM('c646db9215792630a0891c27e40c6745')
+#    google_places = GooglePlaces('AIzaSyC_fBaJydXEGKLLqq5Ym2lCXZ9glOvPqFg') 
+    
+    if request.method == 'POST':
+        
+        city = request.POST.get('search-term')
+        
+#        query_result = google_places.nearby_search(
+#            location=city, keyword='',
+#            radius=20000, types=[types.TYPE_FOOD])
+#        
+#        print(query_result)
+        
         cityData = {}  
 
         conn = sqlite3.connect('db.sqlite3')
         cur = conn.cursor()
-        print('Weather:')
         
         cur.execute("SELECT * FROM Weather WHERE city = '%s'" %city)
         x = cur.fetchone()  
         
         if (x != None):
-            print("Executed")            
+            #print("Cached")            
             
             cityData['status'] = x[1]
             cityData['humidity'] = x[2]
@@ -66,13 +148,19 @@ def weather(request):
         temp = int(round((((temperature['temp'] - 273.15) * 9 / 5) + 32), 0))
         wind_speed = wind['speed']
         
+        if (wind_speed > 20):
+            wind = "It is windy outside."
+        else:
+            wind = "It is not windy outside."
+        
         cityData['status'] = status
         cityData['humidity'] = humidity
         cityData['temperature'] = temp
-        cityData['wind_speed'] = wind_speed
+        cityData['wind_speed'] = wind
         
         parsedData.append(cityData)
-        print(parsedData)
+        
+        #print(parsedData)
         
         conn = sqlite3.connect('db.sqlite3')
         cur = conn.cursor()
@@ -80,9 +168,6 @@ def weather(request):
         cur.execute('INSERT INTO Weather (city, status, humidity, temperature, wind) VALUES ( ?, ?, ?, ?, ? )', 
                 (city, cityData['status'], cityData['humidity'], cityData['temperature'], cityData['wind_speed']))
         conn.commit()
-        
-    #cur.execute('DELETE FROM Weather WHERE plays < 100')
-    #conn.commit()
 
         cur.close()
         
