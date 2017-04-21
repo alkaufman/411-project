@@ -24,6 +24,7 @@ SECRET_KEY = 'led3gdn6x$g5atzwhk8i89qhdqh08d$ql7t!o#r_%+@l!o#a5_'
 SOCIAL_AUTH_FACEBOOK_KEY = '408798749494201'
 SOCIAL_AUTH_FACEBOOK_SECRET = 'a4757e46f65cc710a97f44c626fa6c96'
 
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -31,7 +32,7 @@ ALLOWED_HOSTS = []
 
 TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
 
-
+LOGIN_REDIRECT_URL = 'home'
 # Application definition
 
 INSTALLED_APPS = [
@@ -85,6 +86,8 @@ AUTHENTICATION_BACKENDS = (
 
     'django.contrib.auth.backends.ModelBackend',
 )
+
+
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
@@ -133,6 +136,3 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
-LOGIN_URL = 'login'
-LOGOUT_URL = 'logout'
-LOGIN_REDIRECT_URL = 'home'

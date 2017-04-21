@@ -1,10 +1,12 @@
-from django.shortcuts import render, HttpResponse
-from django.template import loader
+from django.shortcuts import render
 import requests
 import json
 import pyowm 
-from OWMapp.forms import WeatherForm
+from yelpapi import YelpAPI
 from googleplaces import GooglePlaces, types, lang
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import render, redirect
 
 import sqlite3
 
@@ -16,6 +18,20 @@ import sqlite3
 
 def home(request):
     return render(request, 'home.html')
+    
+def register(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get('username')
+            raw_password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=raw_password)
+            login(request, user)
+            return redirect('home')
+    else:
+        form = UserCreationForm()
+    return render(request, 'register.html', {'form': form})
 
 def activities(request):
     parsedData = []
@@ -26,12 +42,6 @@ def activities(request):
     if request.method == 'POST':
         
         city = request.POST.get('search-term')
-        
-#        query_result = google_places.nearby_search(
-#            location=city, keyword='',
-#            radius=20000, types=[types.TYPE_FOOD])
-#        
-#        print(query_result)
         
         activitiesData = {}  
                 
@@ -48,8 +58,8 @@ def activities(request):
         if (status == "Rain" or status == "Snow" or temp < 32):
             query_result = google_places.nearby_search(
             location=city, keyword='',
-            radius=20000, types=[types.TYPE_AQUARIUM, types.TYPE_ART_GALLERY, types.TYPE_BOWLING_ALLEY, 
-                                 types.TYPE_CLOTHING_STORE, types.TYPE_MOVIE_THEATER, types.TYPE_SHOPPING_MALL])
+            radius=20000, types=[types.TYPE_AQUARIUM, types.TYPE_ART_GALLERY, types.TYPE_BOWLING_ALLEY, types.TYPE_MUSEUM,
+                                 types.TYPE_MOVIE_THEATER, types.TYPE_SHOPPING_MALL])
             
         elif (status == "Clear" or temp > 50):
             query_result = google_places.nearby_search(
@@ -59,11 +69,11 @@ def activities(request):
             
         
         else:  
-            if (status == "Wind" or status == "Mist" or wind_speed > 15 or humidity > 80):
+            if (status == "Wind" or status == "Mist" or wind_speed > 15 or humidity > 80 and 32 < temp < 50):
                 query_result = google_places.nearby_search(
                 location=city, keyword='',
-                types=[types.TYPE_AQUARIUM, types.TYPE_ART_GALLERY, types.TYPE_BOWLING_ALLEY, 
-                                 types.TYPE_CLOTHING_STORE, types.TYPE_MOVIE_THEATER, types.TYPE_SHOPPING_MALL])
+                types=[types.TYPE_AQUARIUM, types.TYPE_ART_GALLERY, types.TYPE_BOWLING_ALLEY, types.TYPE_MUSEUM,
+                       types.TYPE_MOVIE_THEATER, types.TYPE_SHOPPING_MALL])
                                  
                 
             else:
@@ -77,7 +87,7 @@ def activities(request):
         for place in query_result.places:
             activitiesData[i] = place.name
             i = i+1
-            print(place.name)
+            #print(place.name)
         
         parsedData.append(activitiesData)
         
@@ -104,17 +114,11 @@ def weather(request):
     parsedData = []
     
     owm = pyowm.OWM('c646db9215792630a0891c27e40c6745')
-#    google_places = GooglePlaces('AIzaSyC_fBaJydXEGKLLqq5Ym2lCXZ9glOvPqFg') 
+
     
     if request.method == 'POST':
         
         city = request.POST.get('search-term')
-        
-#        query_result = google_places.nearby_search(
-#            location=city, keyword='',
-#            radius=20000, types=[types.TYPE_FOOD])
-#        
-#        print(query_result)
         
         cityData = {}  
 
