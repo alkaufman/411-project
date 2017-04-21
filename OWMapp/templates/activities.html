@@ -1,0 +1,54 @@
+<!--
+
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Apr 20 22:58:08 2017
+
+@author: Allison Kaufman
+"""
+
+-->
+
+ <h2>Search for Places to Visit</h2>
+
+<form action="." method="POST">{% csrf_token %} 
+
+	<input type="text", name="search-term">
+	<input type="submit" name="search-form" value="Search">
+
+</form>
+
+<form action="http://localhost:8000/OWMapp/">
+    <input type="submit" value="Return to Homepage" />
+</form>
+
+<tbody>
+          
+          {% for key in data %}
+            <tr>
+                <td>{{ key.0 }}</td>
+                <br />
+                <td>{{ key.1 }}</td>
+                <br />
+                <td>{{ key.2 }}</td>
+                <br />
+                <td>{{ key.3 }}</td>
+                <br />
+                <td>{{ key.4 }}</td>
+                <br />
+                <td>{{ key.5 }}</td>
+                <br />
+                <td>{{ key.6 }}</td>
+                <br />
+                <td>{{ key.7 }}</td>
+                <br />
+                <td>{{ key.8 }}</td>
+                <br />
+                <td>{{ key.9 }}</td>
+                <br />
+                <td>{{ key.10 }}</td>
+                <br />
+            <tr>
+          {% endfor %}
+          
+</tbody>

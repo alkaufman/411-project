@@ -1,0 +1,33 @@
+<!--
+
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Apr 20 14:26:44 2017
+
+@author: Allison Kaufman
+"""
+
+-->
+
+
+{% block content %}
+  <h2>Login</h2>
+  <form method="post">
+
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit">Login</button>
+
+  </form>
+
+  <form action="http://localhost:8000/OWMapp/">
+    <input type="submit" value="Return to Homepage" />
+  </form>
+
+  <br>
+  <p><strong>-- OR --</strong></p>
+
+  <a href="{% url 'social:begin' 'facebook' %}">Login with Facebook</a>
+
+{% endblock %}
